@@ -1,0 +1,10 @@
+{
+  "name": "underwater-archaeology-dive-log",
+  "version": "2.0.0",
+  "private": true,
+  "description": "水下考古潜水记录：潮汐窗口与安全余压闭环（规则/存储/界面三层）",
+  "scripts": {
+    "test": "node tests/rules.test.js",
+    "test:ui": "node tests/ui.smoke.test.js"
+  }
+}
