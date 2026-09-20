@@ -1,0 +1,9 @@
+{
+  "name": "underwater-archaeology-dive-log",
+  "version": "1.0.0",
+  "description": "水下考古潜水记录：潮汐窗口与安全余压闭环（登记 → 安全闸门 → 换人复核 → 时间线/导出）",
+  "private": true,
+  "scripts": {
+    "test": "node test/rules.test.js"
+  }
+}

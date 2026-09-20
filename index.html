@@ -3,152 +3,163 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>水下考古潜水记录</title>
+  <title>水下考古潜水记录 · 潮汐窗口与安全余压闭环</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, "PingFang SC", sans-serif; background: #e8f2f3; color: #183035; }
-    header { padding: 18px 24px; background: #fff; border-bottom: 1px solid #c9dadc; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
-    h1 { margin: 0; font-size: 26px; }
-    button { border: 0; border-radius: 8px; padding: 10px 13px; background: #1d6c78; color: #fff; font-weight: 800; cursor: pointer; }
+    header { padding: 16px 24px; background: #fff; border-bottom: 1px solid #c9dadc; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+    h1 { margin: 0; font-size: 23px; }
+    h2 { font-size: 16px; margin: 14px 0 8px; }
+    h3 { font-size: 14px; margin: 10px 0 6px; }
+    button { border: 0; border-radius: 8px; padding: 9px 12px; background: #1d6c78; color: #fff; font-weight: 800; cursor: pointer; font-size: 13px; }
+    button:hover { filter: brightness(1.08); }
     button.secondary { background: #64777b; }
-    input, select, textarea { width: 100%; border: 1px solid #c9dadc; border-radius: 6px; padding: 9px; font: inherit; background: #fff; }
-    textarea { min-height: 64px; }
-    label { display: block; margin: 9px 0 5px; color: #5c7378; font-size: 13px; }
-    .app { display: grid; grid-template-columns: 1fr 360px; gap: 16px; padding: 16px; }
+    button.danger { background: #a3482f; }
+    button.ghost { background: #e4eeee; color: #1d6c78; }
+    button:disabled { background: #aebfc2; cursor: not-allowed; }
+    input, select, textarea { width: 100%; border: 1px solid #c9dadc; border-radius: 6px; padding: 8px; font: inherit; background: #fff; }
+    textarea { min-height: 52px; resize: vertical; }
+    label { display: block; margin: 8px 0 4px; color: #5c7378; font-size: 12px; font-weight: 700; }
+    .app { display: grid; grid-template-columns: 1fr 400px; gap: 16px; padding: 16px; align-items: start; }
     .panel { background: #fff; border: 1px solid #c9dadc; border-radius: 8px; padding: 14px; }
-    .map { position: relative; height: calc(100vh - 128px); min-height: 560px; overflow: hidden; background: radial-gradient(circle at 30% 20%, #5fa8b1, #0f5262 55%, #07333f); border-radius: 8px; border: 1px solid #0c4451; cursor: crosshair; }
+    .map-wrap { position: sticky; top: 16px; }
+    .map { position: relative; height: calc(100vh - 188px); min-height: 520px; overflow: hidden; background: radial-gradient(circle at 30% 20%, #5fa8b1, #0f5262 55%, #07333f); border-radius: 8px; border: 1px solid #0c4451; cursor: crosshair; }
     .wreck { position: absolute; left: 24%; top: 28%; width: 52%; height: 31%; border: 3px solid rgba(220,235,224,.55); border-radius: 48% 44% 42% 50%; transform: rotate(-9deg); }
     .rib { position: absolute; width: 2px; height: 36%; background: rgba(220,235,224,.35); top: 27%; transform: rotate(-9deg); }
-    .marker { position: absolute; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,.7); box-shadow: 0 4px 12px rgba(0,0,0,.35); cursor: pointer; }
-    .marker.selected { outline: 4px solid rgba(255,234,124,.75); }
+    .marker { position: absolute; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 800; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,.7); box-shadow: 0 4px 12px rgba(0,0,0,.35); cursor: pointer; padding: 0; }
+    .marker.selected { outline: 4px solid rgba(255,234,124,.8); z-index: 5; }
+    .marker.st-pending { border-style: dashed; border-color: #ffd766; }
+    .marker.st-approved { box-shadow: 0 0 0 3px rgba(96,200,140,.85), 0 4px 12px rgba(0,0,0,.35); }
+    .marker.st-invalidated { opacity: .42; filter: grayscale(1); text-decoration: line-through; cursor: default; }
     .ceramic { background: #b56c38; } .wood { background: #6c4b2f; } .metal { background: #6e7880; } .unknown { background: #725ca6; }
-    .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-    .list { display: grid; gap: 8px; max-height: 330px; overflow: auto; }
+    .filters { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 10px; }
+    .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+    .stat { background: #f1f7f8; border: 1px solid #d7e4e5; border-radius: 8px; padding: 8px; text-align: center; }
+    .stat b { display: block; font-size: 18px; }
+    .stat span { font-size: 11px; color: #5c7378; }
+    .list { display: grid; gap: 8px; max-height: 300px; overflow: auto; }
+    .timeline { display: grid; gap: 8px; max-height: 640px; overflow: auto; }
     .item { border: 1px solid #d7e4e5; border-radius: 8px; padding: 10px; cursor: pointer; }
     .item.active { border-color: #1d6c78; background: #eef8f9; }
-    .timeline { display: grid; gap: 8px; max-height: 240px; overflow: auto; }
-    .pill { display: inline-block; padding: 3px 8px; border: 1px solid #c9dadc; border-radius: 999px; font-size: 12px; }
-    .muted { color: #5c7378; font-size: 13px; }
-    @media (max-width: 980px) { header { display: block; } .app { grid-template-columns: 1fr; } .map { height: 560px; } }
+    .item.invalid { opacity: .65; background: #f4f4f4; }
+    .pill { display: inline-block; padding: 2px 8px; border: 1px solid #c9dadc; border-radius: 999px; font-size: 11px; margin-right: 4px; }
+    .pill.ok { background: #e3f5ea; border-color: #8ccaa3; color: #1d6b3b; }
+    .pill.warn { background: #fdf3d7; border-color: #e0c265; color: #7a5b12; }
+    .pill.bad { background: #fbe4dc; border-color: #d99a83; color: #8a3418; }
+    .pill.gray { background: #eceff0; border-color: #c2cdcf; color: #51636a; }
+    .muted { color: #5c7378; font-size: 12px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .gate { display: grid; gap: 4px; margin: 8px 0; padding: 8px; border-radius: 8px; background: #f6fafa; border: 1px solid #dde9ea; font-size: 12px; }
+    .gate .pass { color: #1d6b3b; }
+    .gate .fail { color: #a33418; font-weight: 700; }
+    #banner { display: none; border-radius: 8px; padding: 9px 12px; margin-bottom: 10px; font-size: 13px; white-space: pre-line; }
+    #banner.show { display: block; }
+    #banner.error { background: #fbe4dc; border: 1px solid #d99a83; color: #8a3418; }
+    #banner.info { background: #e6f2f4; border: 1px solid #aecfd4; color: #1d6c78; }
+    .review-box { border: 1px dashed #c9a94e; background: #fdf8e7; border-radius: 8px; padding: 10px; margin-top: 10px; }
+    fieldset { border: 1px solid #d7e4e5; border-radius: 8px; margin: 0 0 10px; padding: 8px 10px 10px; }
+    legend { font-size: 12px; font-weight: 800; color: #1d6c78; padding: 0 6px; }
+    .close-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-top: 6px; }
+    @media (max-width: 1000px) { header { display: block; } .app { grid-template-columns: 1fr; } .map { height: 480px; } .map-wrap { position: static; } }
   </style>
 </head>
 <body>
   <header>
-    <div><h1>水下考古潜水记录</h1><div class="muted">点击沉船平面图添加标记，筛选、编辑并导出JSON。</div></div>
-    <button id="exportBtn">导出JSON</button>
+    <div>
+      <h1>水下考古潜水记录</h1>
+      <div class="muted">登记计划时段与起返压 → 潮高/潜伴/余压安全闸门 → 换人复核 → 计入时间线。点击沉船平面图添加标记。</div>
+    </div>
+    <div class="actions" style="margin:0">
+      <button id="refreshBtn" class="ghost" title="从本地存储重新载入，筛选条件保持不变">刷新数据</button>
+      <button id="resetBtn" class="secondary" title="清除本地数据并恢复示例">重置示例</button>
+      <button id="exportBtn">导出JSON</button>
+    </div>
   </header>
   <main class="app">
-    <section class="panel">
-      <div class="map" id="map"><div class="wreck"></div></div>
+    <section>
+      <div class="panel map-wrap">
+        <div class="map" id="map"><div class="wreck"></div></div>
+        <div class="stats" id="stats"></div>
+      </div>
     </section>
     <aside class="panel">
-      <div class="toolbar">
-        <select id="filter"><option value="">全部类型</option><option value="ceramic">陶片</option><option value="wood">木构件</option><option value="metal">金属件</option><option value="unknown">未知物</option></select>
-        <select id="view"><option value="list">标记列表</option><option value="timeline">潜次时间线</option></select>
+      <div class="filters">
+        <select id="filterType"><option value="">全部类型</option><option value="ceramic">陶片</option><option value="wood">木构件</option><option value="metal">金属件</option><option value="unknown">未知物</option></select>
+        <select id="filterStatus"><option value="">全部状态</option><option value="pending">待复核</option><option value="approved">已计入时间线</option><option value="invalidated">已失效（留档）</option></select>
+        <select id="filterDive"><option value="">全部潜次</option></select>
+        <select id="view"><option value="marks">标记</option><option value="dives">潜次</option><option value="timeline">时间线</option><option value="archive">留档</option></select>
       </div>
-      <form id="form">
-        <h2>标记信息</h2>
-        <input name="id" type="hidden">
-        <label>编号</label><input name="code" required>
-        <label>类型</label><select name="type"><option value="ceramic">陶片</option><option value="wood">木构件</option><option value="metal">金属件</option><option value="unknown">未知物</option></select>
-        <label>潜次</label><input name="dive" placeholder="例如DIVE-04" required>
-        <label>深度</label><input name="depth" placeholder="例如18.4m" required>
-        <label>朝向</label><input name="orientation" placeholder="例如东北偏北">
-        <label>保存状态</label><input name="condition" placeholder="例如表面附着贝类">
-        <label>备注</label><textarea name="note"></textarea>
-        <div class="toolbar"><button>保存标记</button><button type="button" id="deleteBtn" class="secondary">删除</button></div>
-      </form>
-      <h2 id="listTitle">标记列表</h2>
-      <div id="list" class="list"></div>
+      <div id="banner"></div>
+
+      <div id="viewMarks">
+        <form id="markForm">
+          <h2>标记信息</h2>
+          <input name="id" type="hidden">
+          <input name="x" type="hidden" value="50"><input name="y" type="hidden" value="50">
+          <div class="row2">
+            <div><label>编号 *</label><input name="code" required></div>
+            <div><label>类型</label><select name="type"><option value="ceramic">陶片</option><option value="wood">木构件</option><option value="metal">金属件</option><option value="unknown">未知物</option></select></div>
+          </div>
+          <label>所属潜次 *</label><select name="diveId" id="markDive"></select>
+          <div class="row3">
+            <div><label>深度 *</label><input name="depth" placeholder="18.4m" required></div>
+            <div><label>朝向</label><input name="orientation"></div>
+            <div><label>保存状态</label><input name="condition"></div>
+          </div>
+          <label>备注</label><textarea name="note"></textarea>
+          <div class="actions"><button id="markSaveBtn">保存标记</button><button type="button" id="deleteBtn" class="secondary">删除</button><button type="button" id="markCancelBtn" class="ghost">清空</button></div>
+        </form>
+        <div id="reviewBox"></div>
+        <h2 id="listTitle">标记列表</h2>
+        <div id="markList" class="list"></div>
+      </div>
+
+      <div id="viewDives" hidden>
+        <form id="diveForm">
+          <h2 id="diveFormTitle">潜次登记</h2>
+          <input name="id" type="hidden">
+          <div class="row2">
+            <div><label>潜次编号 *</label><input name="code" placeholder="DIVE-04" required></div>
+            <div><label>主潜员 *</label><input name="leader" placeholder="下水负责人" required></div>
+          </div>
+          <label>潜伴（至少两人，逗号/顿号分隔）*</label>
+          <input name="buddies" placeholder="例如：周潜、郑涌" required>
+          <div class="row2">
+            <div><label>计划开始 *</label><input name="plannedStart" type="datetime-local" required></div>
+            <div><label>计划结束 *</label><input name="plannedEnd" type="datetime-local" required></div>
+          </div>
+          <div class="row2">
+            <div><label>潮高（米，≤ 0.8 方可闭潜）</label><input name="tideHeightM" type="number" step="0.01" placeholder="0.60" required></div>
+            <div><label>起返压（巴，≥ 50 方可闭潜）</label><input name="returnPressureBar" type="number" step="1" placeholder="90" required></div>
+          </div>
+          <div class="gate" id="gate"></div>
+          <div class="actions">
+            <button id="diveSaveBtn">登记潜次</button>
+            <button type="button" id="diveCancelBtn" class="ghost">清空表单</button>
+          </div>
+          <div class="muted" id="diveEditHint" hidden>修改已登记潜次将使其全部关联标记<strong>立即失效</strong>（旧值留档但不再导出），并需重新闭潜与复核。</div>
+        </form>
+        <h2>潜次列表</h2>
+        <div id="diveList" class="list"></div>
+      </div>
+
+      <div id="viewTimeline" hidden>
+        <h2>潜次时间线</h2>
+        <div class="muted" style="margin-bottom:8px">仅统计复核通过的标记；改动潜次后被移除的标记不会出现在这里。</div>
+        <div id="timeline" class="timeline"></div>
+      </div>
+
+      <div id="viewArchive" hidden>
+        <h2>失效留档</h2>
+        <div class="muted" style="margin-bottom:8px">潜次改动前的旧值完整留档，仅供追溯，不参与导出。</div>
+        <div id="archive" class="timeline"></div>
+      </div>
     </aside>
   </main>
-  <script>
-    const map = document.querySelector("#map");
-    const form = document.querySelector("#form");
-    const list = document.querySelector("#list");
-    const filter = document.querySelector("#filter");
-    const view = document.querySelector("#view");
-    const listTitle = document.querySelector("#listTitle");
-    const typeNames = { ceramic: "陶片", wood: "木构件", metal: "金属件", unknown: "未知物" };
-    let marks = JSON.parse(localStorage.getItem("zfl30Marks") || "[]");
-    let pending = null;
-    if (!marks.length) {
-      marks = [
-        { id: crypto.randomUUID(), code: "A-017", type: "ceramic", dive: "DIVE-01", x: 42, y: 46, depth: "17.8m", orientation: "东", condition: "边缘残缺", note: "靠近船肋" },
-        { id: crypto.randomUUID(), code: "W-003", type: "wood", dive: "DIVE-02", x: 58, y: 39, depth: "18.2m", orientation: "西北", condition: "稳定", note: "疑似横梁" }
-      ];
-      save();
-    }
-    for (let i = 0; i < 7; i++) {
-      const rib = document.createElement("div");
-      rib.className = "rib";
-      rib.style.left = 28 + i * 7 + "%";
-      map.appendChild(rib);
-    }
-    function save() { localStorage.setItem("zfl30Marks", JSON.stringify(marks)); }
-    function render() {
-      map.querySelectorAll(".marker").forEach(el => el.remove());
-      const filtered = filter.value ? marks.filter(m => m.type === filter.value) : marks;
-      filtered.forEach(mark => {
-        const el = document.createElement("button");
-        el.className = "marker " + mark.type + (mark.id === form.id.value ? " selected" : "");
-        el.style.left = mark.x + "%";
-        el.style.top = mark.y + "%";
-        el.textContent = mark.code.slice(0, 2);
-        el.onclick = event => { event.stopPropagation(); edit(mark.id); };
-        map.appendChild(el);
-      });
-      if (view.value === "timeline") renderTimeline(filtered);
-      else renderList(filtered);
-    }
-    function renderList(data) {
-      listTitle.textContent = "标记列表";
-      list.className = "list";
-      list.innerHTML = data.map(m => '<div class="item '+(m.id===form.id.value?'active':'')+'" data-id="'+m.id+'"><b>'+m.code+'</b> <span class="pill">'+typeNames[m.type]+'</span><div class="muted">'+m.dive+' · '+m.depth+' · '+m.orientation+'</div><div>'+m.condition+'</div></div>').join("");
-      list.querySelectorAll("[data-id]").forEach(el => el.onclick = () => edit(el.dataset.id));
-    }
-    function renderTimeline(data) {
-      listTitle.textContent = "潜次时间线";
-      list.className = "timeline";
-      const groups = data.reduce((map, item) => ((map[item.dive] ||= []).push(item), map), {});
-      list.innerHTML = Object.entries(groups).map(([dive, items]) => '<div class="item"><b>'+dive+'</b><div class="muted">新增'+items.length+'个标记</div>'+items.map(i => '<div>'+i.code+' · '+typeNames[i.type]+'</div>').join("")+'</div>').join("");
-    }
-    function edit(id) {
-      const mark = marks.find(m => m.id === id);
-      if (!mark) return;
-      for (const [key, value] of Object.entries(mark)) if (form[key]) form[key].value = value;
-      pending = { x: mark.x, y: mark.y };
-      render();
-    }
-    map.addEventListener("click", event => {
-      const rect = map.getBoundingClientRect();
-      pending = { x: Number(((event.clientX - rect.left) / rect.width * 100).toFixed(2)), y: Number(((event.clientY - rect.top) / rect.height * 100).toFixed(2)) };
-      form.reset();
-      form.id.value = "";
-      form.code.value = "M-" + String(marks.length + 1).padStart(3, "0");
-      form.dive.value = "DIVE-01";
-      render();
-    });
-    form.onsubmit = event => {
-      event.preventDefault();
-      if (!pending) pending = { x: 50, y: 50 };
-      const data = Object.fromEntries(new FormData(form).entries());
-      if (data.id) Object.assign(marks.find(m => m.id === data.id), data, pending);
-      else marks.push({ ...data, id: crypto.randomUUID(), ...pending });
-      save(); render();
-    };
-    document.querySelector("#deleteBtn").onclick = () => {
-      if (!form.id.value) return;
-      marks = marks.filter(m => m.id !== form.id.value);
-      form.reset(); pending = null; save(); render();
-    };
-    document.querySelector("#exportBtn").onclick = () => {
-      const blob = new Blob([JSON.stringify(marks, null, 2)], { type: "application/json" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = "dive-marks.json"; a.click(); URL.revokeObjectURL(a.href);
-    };
-    filter.onchange = render; view.onchange = render;
-    render();
-  </script>
+  <script src="js/rules.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
